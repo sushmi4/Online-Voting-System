@@ -1,0 +1,8 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "c:\\Users\\hsc\\OneDrive\\Pictures\\Documents\\bca 6th java\\Voting system\\votee\\lib\\mysql-connector-j-9.5.0.jar",
+        "c:\\Users\\hsc\\Downloads\\javax.mail-1.6.2.jar",
+        "c:\\Users\\hsc\\Downloads\\activation-1.1.1.jar"
+    ]
+}
