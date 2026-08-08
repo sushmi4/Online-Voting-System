@@ -13,6 +13,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -39,52 +40,67 @@ public class UserRegister extends JPanel {
     private JComboBox<String> dayBox, monthBox, yearBox;
     private String actualFilePath = "";
 
+    private static final Pattern EMAIL_RULE =
+            Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern PASSWORD_RULE =
+            Pattern.compile("(?=.*[A-Za-z])(?=.*\\d).{8,}");
+
     public UserRegister(CardLayout cl, JPanel contentPanel) {
+        setOpaque(false);
         setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+
+        JPanel centerWrapper = new JPanel(new GridBagLayout());
+        centerWrapper.setOpaque(false);
+        centerWrapper.setBorder(new EmptyBorder(24, 30, 24, 30));
+
+        UITheme.Card card = new UITheme.Card();
+        card.setBorder(new EmptyBorder(30, 44, 30, 44));
+        card.setPreferredSize(new Dimension(760, 720));
+
+        JPanel inner = new JPanel(new BorderLayout(0, 16));
+        inner.setOpaque(false);
 
         // Title
         JLabel title = new JLabel("Voter Registration Form", JLabel.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 26));
-        title.setForeground(new Color(20, 33, 61));
-        title.setBorder(new EmptyBorder(20, 0, 10, 0));
-        add(title, BorderLayout.NORTH);
+        title.setFont(UITheme.font(Font.BOLD, 26));
+        title.setForeground(UITheme.PRIMARY_DARK);
+        inner.add(title, BorderLayout.NORTH);
 
         JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(Color.WHITE);
-        formPanel.setBorder(new EmptyBorder(10, 50, 20, 50));
+        formPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 10, 8, 10);
+        gbc.insets = new Insets(7, 8, 7, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
 
         // ---------------- Fields ----------------
-        nameField = new JTextField(20);
-        vIdField = new JTextField(20);
-        emailField = new JTextField(20);
-        passField = new JPasswordField(20);
-        mobField = new JTextField(20);
+        nameField = new UITheme.RoundedTextField(20);
+        vIdField = new UITheme.RoundedTextField(20);
+        emailField = new UITheme.RoundedTextField(20);
+        passField = new UITheme.RoundedPasswordField(20);
+        mobField = new UITheme.RoundedTextField(20);
 
         addrArea = new JTextArea(3, 20);
-        addrArea.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
-        addrArea.setLineWrap(true);
+        UITheme.styleTextArea(addrArea);
 
         // ---------------- Image Picker ----------------
-        JLabel imgInstruction = new JLabel("Less than 500KB and PNG");
-        imgInstruction.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        imgInstruction.setForeground(Color.DARK_GRAY);
+        JLabel imgInstruction = new JLabel("PNG only, max 500KB");
+        imgInstruction.setFont(UITheme.font(Font.PLAIN, 11));
+        imgInstruction.setForeground(UITheme.TEXT_MUTED);
 
-        imagePathDisplay = new JTextField("No file selected");
+        imagePathDisplay = new UITheme.RoundedTextField("No file selected");
         imagePathDisplay.setEditable(false);
 
-        JButton browseBtn = new JButton("Choose Pic");
+        JButton browseBtn = UITheme.button("Choose Pic", UITheme.ACCENT);
         browseBtn.addActionListener(e -> handleImageSelection());
 
-        JPanel imgFieldPanel = new JPanel(new BorderLayout(5, 0));
+        JPanel imgFieldPanel = new JPanel(new BorderLayout(8, 0));
+        imgFieldPanel.setOpaque(false);
         imgFieldPanel.add(imagePathDisplay, BorderLayout.CENTER);
         imgFieldPanel.add(browseBtn, BorderLayout.EAST);
 
-        JPanel imgMainPanel = new JPanel(new BorderLayout(0, 3));
-        imgMainPanel.setBackground(Color.WHITE);
+        JPanel imgMainPanel = new JPanel(new BorderLayout(0, 4));
+        imgMainPanel.setOpaque(false);
         imgMainPanel.add(imgInstruction, BorderLayout.NORTH);
         imgMainPanel.add(imgFieldPanel, BorderLayout.CENTER);
 
@@ -92,17 +108,24 @@ public class UserRegister extends JPanel {
         dayBox = new JComboBox<>();
         monthBox = new JComboBox<>();
         yearBox = new JComboBox<>();
-        for (int i = 1; i <= 32; i++)
+        for (int i = 1; i <= 32; i++) {
             dayBox.addItem(String.valueOf(i));
+        }
 
         String[] months = { "Baisakh", "Jestha", "Ashadh", "Shrawan", "Bhadra", "Ashwin",
                 "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra" };
         monthBox = new JComboBox<>(months);
 
-        for (int i = 1888; i <= 2085; i++)
+        for (int i = 1950; i <= 2085; i++) {
             yearBox.addItem(String.valueOf(i));
+        }
 
-        JPanel dobPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        styleCombo(dayBox);
+        styleCombo(monthBox);
+        styleCombo(yearBox);
+
+        JPanel dobPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        dobPanel.setOpaque(false);
         dobPanel.add(dayBox);
         dobPanel.add(monthBox);
         dobPanel.add(yearBox);
@@ -119,23 +142,21 @@ public class UserRegister extends JPanel {
         addRow(formPanel, "Address:", new JScrollPane(addrArea), gbc, row++);
 
         // ---------------- Register Button ----------------
-        JButton regBtn = new JButton("REGISTER NOW");
-        regBtn.setBackground(new Color(0, 123, 255));
-        regBtn.setForeground(Color.WHITE);
-        regBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        regBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        regBtn.setPreferredSize(new Dimension(0, 45));
+        JButton regBtn = UITheme.button("REGISTER NOW");
+        regBtn.setPreferredSize(new Dimension(0, 44));
         regBtn.addActionListener(e -> handleRegistration(cl, contentPanel));
 
         gbc.gridx = 0;
         gbc.gridy = row++;
         gbc.gridwidth = 2;
-        gbc.insets = new Insets(25, 10, 10, 10);
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(22, 8, 4, 8);
         formPanel.add(regBtn, gbc);
 
         // ---------------- Login Link ----------------
-        JLabel loginLink = new JLabel("<html><u>Already registered? Login here</u></html>", JLabel.CENTER);
-        loginLink.setForeground(Color.BLUE);
+        JLabel loginLink = new JLabel("Already registered?  Login here", JLabel.CENTER);
+        loginLink.setFont(UITheme.font(Font.BOLD, 13));
+        loginLink.setForeground(UITheme.ACCENT);
         loginLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
         loginLink.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
@@ -143,28 +164,54 @@ public class UserRegister extends JPanel {
             }
         });
         gbc.gridy = row;
+        gbc.insets = new Insets(6, 8, 0, 8);
         formPanel.add(loginLink, gbc);
 
-        add(new JScrollPane(formPanel), BorderLayout.CENTER);
+        // Scrollable card body
+        JScrollPane scrollPane = new JScrollPane(formPanel);
+        scrollPane.setBorder(null);
+        UITheme.styleScrollPane(scrollPane);
+
+        inner.add(scrollPane, BorderLayout.CENTER);
+        card.add(inner, BorderLayout.CENTER);
+
+        centerWrapper.add(card);
+
+        JScrollPane outerScroll = new JScrollPane(centerWrapper);
+        outerScroll.setBorder(null);
+        outerScroll.setOpaque(false);
+        outerScroll.getViewport().setOpaque(false);
+        outerScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        outerScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        add(outerScroll, BorderLayout.CENTER);
+    }
+
+    private void styleCombo(JComboBox<String> box) {
+        box.setFont(UITheme.font(Font.PLAIN, 13));
+        box.setBackground(UITheme.WHITE);
+        box.setForeground(UITheme.TEXT_DARK);
+        box.setBorder(new UITheme.RoundBorder(UITheme.BORDER, 12));
     }
 
     // ---------------- Image Selection Handler ----------------
     private void handleImageSelection() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select Profile Picture (PNG, Max 500KB)");
-        FileNameExtensionFilter filter = new FileNameExtensionFilter("PNG Image", "png");
-        fileChooser.setFileFilter(filter);
+        fileChooser.setFileFilter(new FileNameExtensionFilter("PNG Image", "png"));
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             if (!file.getName().toLowerCase().endsWith(".png")) {
-                JOptionPane.showMessageDialog(this,
-                        "Only PNG files are allowed!", "File Type Error", JOptionPane.ERROR_MESSAGE);
+                UITheme.showMessage(this, "File Type Error",
+                        "Only PNG files are allowed!",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
             if (file.length() > 500 * 1024) {
-                JOptionPane.showMessageDialog(this,
-                        "File size too large! Maximum 500KB.", "File Size Error", JOptionPane.ERROR_MESSAGE);
+                UITheme.showMessage(this, "File Size Error",
+                        "File size too large! Maximum 500KB.",
+                        JOptionPane.ERROR_MESSAGE);
                 imagePathDisplay.setText("No file selected");
                 actualFilePath = "";
                 return;
@@ -183,73 +230,148 @@ public class UserRegister extends JPanel {
         String mob = mobField.getText().trim();
         String addr = addrArea.getText().trim();
 
-        // Check if all fields are filled
-        if (name.isEmpty() || id.isEmpty() || email.isEmpty() || pass.isEmpty() ||
-                mob.isEmpty() || addr.isEmpty() || actualFilePath.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill up the form!", "Form Incomplete",
+        if (name.isEmpty() || id.isEmpty() || email.isEmpty() || pass.isEmpty()
+                || mob.isEmpty() || addr.isEmpty() || actualFilePath.isEmpty()) {
+            UITheme.showMessage(this, "Form Incomplete", "Please fill up the form!",
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Full Name validation
         if (!name.contains(" ")) {
-            JOptionPane.showMessageDialog(this,
-                    "Please enter your full name (first and last).", "Name Error", JOptionPane.ERROR_MESSAGE);
+            UITheme.showMessage(this, "Name Error",
+                    "Please enter your full name (first and last).",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Mobile number validation: must be exactly 10 digits
+        if (!EMAIL_RULE.matcher(email).matches()) {
+            UITheme.showMessage(this, "Email Error",
+                    "Please enter a valid email address.",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!PASSWORD_RULE.matcher(pass).matches()) {
+            UITheme.showMessage(this, "Weak Password",
+                    "Password must be at least 8 characters with letters and numbers.",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         if (!mob.matches("\\d{10}")) {
-            JOptionPane.showMessageDialog(this,
-                    "Mobile number must be exactly 10 digits.", "Mobile Error", JOptionPane.ERROR_MESSAGE);
+            UITheme.showMessage(this, "Mobile Error",
+                    "Mobile number must be exactly 10 digits.",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        String day = (String) dayBox.getSelectedItem();
-        String month = (String) monthBox.getSelectedItem();
-        String year = (String) yearBox.getSelectedItem();
+        if (!id.matches("[A-Za-z0-9\\-]+")) {
+            UITheme.showMessage(this, "Voter ID Error",
+                    "Voter ID can only contain letters, digits and dashes.",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-        // Age validation
-        if (!isAgeValid(Integer.parseInt(year), month, Integer.parseInt(day))) {
-            JOptionPane.showMessageDialog(this,
-                    "You are not yet 18 years old!", "Age Error", JOptionPane.ERROR_MESSAGE);
+        int day = Integer.parseInt((String) dayBox.getSelectedItem());
+        String month = (String) monthBox.getSelectedItem();
+        int year = Integer.parseInt((String) yearBox.getSelectedItem());
+
+        if (!isValidBsDate(day, month, year)) {
+            UITheme.showMessage(this, "Date Error",
+                    "The selected date is invalid for " + month + ".",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!isAgeValid(year, month, day)) {
+            UITheme.showMessage(this, "Age Error",
+                    "You are not yet 18 years old!",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         int monthNum = monthToNumber(month);
         String dobDB = year + "-" + String.format("%02d", monthNum) + "-"
-                + String.format("%02d", Integer.parseInt(day));
+                + String.format("%02d", day);
 
         try {
             if (DBConnection.voterIdExists(id)) {
-                JOptionPane.showMessageDialog(this, "Voter ID already used!");
+                UITheme.showMessage(this, "Duplicate Voter ID",
+                        "Voter ID already used!", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (DBConnection.emailExists(email)) {
-                JOptionPane.showMessageDialog(this, "Email already used!");
+                UITheme.showMessage(this, "Duplicate Email",
+                        "Email already used!", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (DBConnection.mobileExists(mob)) {
-                JOptionPane.showMessageDialog(this, "Mobile already used!");
+                UITheme.showMessage(this, "Duplicate Mobile",
+                        "Mobile already used!", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             boolean success = DBConnection.registerVoter(name, id, email, pass, dobDB, mob, actualFilePath, addr);
             if (success) {
-                JOptionPane.showMessageDialog(this, "Registration Successful!\nAccount Pending Approval.");
+                UITheme.showMessage(this, "Registration Successful",
+                        "Registration Successful!\nAccount Pending Approval.",
+                        JOptionPane.INFORMATION_MESSAGE);
                 clearFields();
                 cl.show(contentPanel, "UserLogin");
+            } else {
+                UITheme.showMessage(this, "Registration Failed",
+                        "Registration failed. Please try again.",
+                        JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error : " + ex.getMessage());
+            UITheme.showMessage(this, "Error", "Error : " + ex.getMessage(),
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // ---------------- Age Validation ----------------
-    private boolean isAgeValid(int year, String month, int day) {
-        int adYear = year - 57; // BS to AD
-        int adMonth = monthToNumber(month);
-        LocalDate birthDate = LocalDate.of(adYear, adMonth, day);
+    // ---------------- BS Date Validation ----------------
+    private int maxDaysInBsMonth(String month) {
+        switch (month) {
+            case "Baisakh":
+                return 31;
+            case "Jestha":
+            case "Ashadh":
+            case "Shrawan":
+            case "Bhadra":
+            case "Ashwin":
+                return 32;
+            case "Kartik":
+            case "Mangsir":
+            case "Poush":
+            case "Magh":
+            case "Falgun":
+                return 30;
+            case "Chaitra":
+                return 31;
+            default:
+                return 31;
+        }
+    }
+
+    private boolean isValidBsDate(int day, String month, int year) {
+        return day >= 1 && day <= maxDaysInBsMonth(month) && year >= 1950 && year <= 2085;
+    }
+
+    // ---------------- Age Validation (BS -> AD conversion) ----------------
+    private boolean isAgeValid(int bsYear, String month, int day) {
+        int monthNum = monthToNumber(month);
+
+        // Approximate AD year. BS year starts mid-April; the AD year advances
+        // one for BS months Magh, Falgun and Chaitra.
+        int adYear = (monthNum >= 10) ? bsYear - 56 : bsYear - 57;
+
+        // Approximate AD month: Baisakh ~ April, Jestha ~ May, ... Chaitra ~ March
+        int adMonth = ((monthNum + 2) % 12) + 1;
+
+        // Clamp day to be safe against approximate month lengths
+        int adDay = Math.min(day, LocalDate.of(2000, adMonth, 1).lengthOfMonth());
+
+        LocalDate birthDate = LocalDate.of(adYear, adMonth, adDay);
         return Period.between(birthDate, LocalDate.now()).getYears() >= 18;
     }
 
@@ -291,9 +413,11 @@ public class UserRegister extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = row;
         JLabel lbl = new JLabel(label);
-        lbl.setFont(new Font("Segoe UI", Font.BOLD, 16)); // Bold + bigger size
+        lbl.setFont(UITheme.font(Font.BOLD, 13));
+        lbl.setForeground(UITheme.TEXT_MUTED);
         p.add(lbl, gbc);
         gbc.gridx = 1;
+        gbc.gridwidth = 1;
         p.add(comp, gbc);
     }
 

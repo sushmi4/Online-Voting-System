@@ -1,20 +1,18 @@
-import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.RenderingHints;
+import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
@@ -25,147 +23,162 @@ public class AdminLogin extends JPanel {
 
     private JTextField adminUserField;
     private JPasswordField adminPassField;
-    private boolean showPassword = false;
 
     public AdminLogin(CardLayout cl, JPanel contentPanel) {
-
         setOpaque(false);
         setLayout(new GridBagLayout());
 
-        JPanel loginBox = new JPanel() {
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
+        UITheme.Card loginBox = new UITheme.Card(new GridBagLayout());
+        loginBox.setBorder(new EmptyBorder(42, 46, 34, 46));
+        loginBox.setPreferredSize(new Dimension(440, 500));
 
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
 
-                g2.setColor(new Color(255, 255, 255, 190));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 40, 40);
+        int row = 0;
 
-                g2.dispose();
-            }
-        };
+        // Top filler keeps the card content vertically balanced
+        gbc.gridy = row++;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        JPanel topFill = new JPanel();
+        topFill.setOpaque(false);
+        loginBox.add(topFill, gbc);
+        gbc.weighty = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.CENTER;
 
-        loginBox.setOpaque(false);
-        loginBox.setLayout(new BoxLayout(loginBox, BoxLayout.Y_AXIS));
-        loginBox.setBorder(new EmptyBorder(40, 50, 40, 50));
+        JLabel icon = new JLabel(UITheme.logoIcon(56));
+        gbc.gridy = row++;
+        loginBox.add(icon, gbc);
 
         JLabel title = new JLabel("Admin Control Center");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 26));
-        title.setForeground(new Color(20, 33, 61));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        title.setFont(UITheme.font(Font.BOLD, 26));
+        title.setForeground(UITheme.PRIMARY_DARK);
+        gbc.gridy = row++;
+        loginBox.add(title, gbc);
 
-        loginBox.add(title);
-        loginBox.add(Box.createRigidArea(new Dimension(0, 25)));
+        JLabel subtitle = new JLabel("Authorized personnel only");
+        subtitle.setFont(UITheme.font(Font.PLAIN, 13));
+        subtitle.setForeground(UITheme.TEXT_MUTED);
+        gbc.gridy = row++;
+        loginBox.add(subtitle, gbc);
 
-        JLabel userLabel = new JLabel("Admin Username:");
-        userLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        userLabel.setForeground(new Color(50, 50, 50));
-        userLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Username label (flush left, above the field)
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(22, 0, 6, 0);
+        JLabel lblUser = new JLabel("Username");
+        lblUser.setFont(UITheme.font(Font.BOLD, 12));
+        lblUser.setForeground(UITheme.TEXT_MUTED);
+        gbc.gridy = row++;
+        loginBox.add(lblUser, gbc);
 
-        loginBox.add(userLabel);
+        adminUserField = new UITheme.RoundedTextField(18);
+        adminUserField.setPreferredSize(new Dimension(0, 44));
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy = row++;
+        loginBox.add(adminUserField, gbc);
 
-        adminUserField = new JTextField();
-        adminUserField.setPreferredSize(new Dimension(250, 35));
-        adminUserField.setMaximumSize(new Dimension(250, 35));
-        adminUserField.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Password label
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(16, 0, 6, 0);
+        JLabel lblPass = new JLabel("Password");
+        lblPass.setFont(UITheme.font(Font.BOLD, 12));
+        lblPass.setForeground(UITheme.TEXT_MUTED);
+        gbc.gridy = row++;
+        loginBox.add(lblPass, gbc);
 
-        loginBox.add(adminUserField);
-        loginBox.add(Box.createRigidArea(new Dimension(0, 15)));
+        // Password field with built-in eye toggle (inside the box)
+        adminPassField = new UITheme.RoundedPasswordField(15, true);
+        adminPassField.setPreferredSize(new Dimension(0, 44));
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy = row++;
+        loginBox.add(adminPassField, gbc);
 
-        JLabel passLabel = new JLabel("Password:");
-        passLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        passLabel.setForeground(new Color(50, 50, 50));
-        passLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        loginBox.add(passLabel);
-
-        // Password field panel (for eye icon inside)
-        JPanel passPanel = new JPanel(new BorderLayout());
-        passPanel.setMaximumSize(new Dimension(250, 35));
-
-        adminPassField = new JPasswordField();
-        adminPassField.setBorder(new EmptyBorder(5, 5, 5, 5));
-
-        JButton eyeButton = new JButton("👁");
-        eyeButton.setBorder(null);
-        eyeButton.setFocusPainted(false);
-        eyeButton.setContentAreaFilled(false);
-        eyeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        eyeButton.addActionListener(e -> {
-
-            if (showPassword) {
-                adminPassField.setEchoChar('•');
-                eyeButton.setText("👁");
-                showPassword = false;
-            } else {
-                adminPassField.setEchoChar((char) 0);
-                eyeButton.setText("🔒");
-                showPassword = true;
-            }
-
-        });
-
-        passPanel.add(adminPassField, BorderLayout.CENTER);
-        passPanel.add(eyeButton, BorderLayout.EAST);
-
-        loginBox.add(passPanel);
-
-        loginBox.add(Box.createRigidArea(new Dimension(0, 25)));
-
-        JButton btnLogin = new JButton("ACCESS DASHBOARD");
-        btnLogin.setBackground(new Color(20, 33, 61));
-        btnLogin.setForeground(Color.WHITE);
-        btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnLogin.setPreferredSize(new Dimension(250, 40));
-        btnLogin.setMaximumSize(new Dimension(250, 40));
-        btnLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnLogin.setFocusPainted(false);
-
-        btnLogin.addActionListener(e -> {
-
-            String user = adminUserField.getText();
-            String pass = new String(adminPassField.getPassword());
-
-            if (user.equals("admin") && pass.equals("admin123")) {
-
-                adminUserField.setText("");
-                adminPassField.setText("");
-
-                MainApp parent = (MainApp) SwingUtilities.getWindowAncestor(this);
-                parent.setMainNavbarVisible(false);
-
-                cl.show(contentPanel, "AdminDashboard");
-
-            } else {
-
-                JOptionPane.showMessageDialog(this,
-                        "Invalid Credentials",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-            }
-
-        });
-
-        loginBox.add(btnLogin);
-
-        loginBox.add(Box.createRigidArea(new Dimension(0, 15)));
+        JButton btnLogin = UITheme.button("ACCESS DASHBOARD");
+        btnLogin.setPreferredSize(new Dimension(250, 44));
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(24, 0, 0, 0);
+        gbc.gridy = row++;
+        loginBox.add(btnLogin, gbc);
 
         JLabel lblBack = new JLabel("Go back to Home");
-        lblBack.setForeground(new Color(100, 100, 100));
+        lblBack.setFont(UITheme.font(Font.BOLD, 13));
+        lblBack.setForeground(UITheme.ACCENT);
         lblBack.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        lblBack.setAlignmentX(Component.CENTER_ALIGNMENT);
+        gbc.insets = new Insets(14, 0, 0, 0);
+        gbc.gridy = row++;
+        loginBox.add(lblBack, gbc);
 
-        lblBack.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+        // Bottom filler
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        JPanel bottomFill = new JPanel();
+        bottomFill.setOpaque(false);
+        gbc.gridy = row++;
+        loginBox.add(bottomFill, gbc);
+
+        add(loginBox);
+
+        // --- LISTENERS ---
+        btnLogin.addActionListener(e -> authenticate(cl, contentPanel));
+
+        lblBack.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
                 cl.show(contentPanel, "Home");
             }
         });
+    }
 
-        loginBox.add(lblBack);
+    private void authenticate(CardLayout cl, JPanel contentPanel) {
+        String username = adminUserField.getText().trim();
+        String password = new String(adminPassField.getPassword());
 
-        add(loginBox);
+        if (username.isEmpty() || password.isEmpty()) {
+            UITheme.showMessage(this, "Login Required",
+                    "Please enter username and password.",
+                    javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (isValidAdmin(username, password)) {
+            adminUserField.setText("");
+            adminPassField.setText("");
+
+            UserSession.openSession("Administrator", "", "", "", "Approved",
+                    "", "", "", UserSession.Role.ADMIN);
+
+            MainApp parent = (MainApp) SwingUtilities.getWindowAncestor(this);
+            parent.setMainNavbarVisible(false);
+
+            cl.show(contentPanel, "AdminDashboard");
+        } else {
+            UITheme.showMessage(this, "Error",
+                    "Invalid Credentials", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private boolean isValidAdmin(String username, String password) {
+        String sql = "SELECT password FROM admins WHERE username=?";
+        try (Connection conn = Database.getConnection();
+                PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setString(1, username);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return PasswordHasher.verifyPassword(password, rs.getString("password"));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Admin auth error: " + e.getMessage());
+        }
+        return false;
     }
 }

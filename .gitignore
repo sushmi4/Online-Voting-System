@@ -1,0 +1,18 @@
+# Compiled output
+SecurityVoting/bin/
+
+# Local configuration (contains DB / SMTP credentials)
+SecurityVoting/config.properties
+config.properties
+
+# Temp / log files
+*.out
+*.err
+*.log
+
+# OS / IDE cruft
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.iml

@@ -2,18 +2,17 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Image;
 import java.io.File;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.regex.Pattern;
 
-import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -38,35 +37,29 @@ public class AdminViewVoter extends JPanel {
     private TableRowSorter<DefaultTableModel> sorter;
     private JTextField searchField;
 
-    // Database Connection
-    private final String DB_URL = "jdbc:mysql://localhost:3306/onlinevoting_db";
-    private final String DB_USER = "root";
-    private final String DB_PASS = "";
-
-    // Brand Colors
-    private final Color NAVBAR_BLUE = new Color(0, 102, 204);
-
     public AdminViewVoter(CardLayout cl, JPanel contentPanel) {
         setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+        setBackground(UITheme.SURFACE_MUTED);
 
         // --- 1. TOP PANEL: Header + Search ---
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBackground(NAVBAR_BLUE);
+        JPanel topPanel = new UITheme.HeaderBar();
+        topPanel.setLayout(new BorderLayout());
+        topPanel.setBorder(new javax.swing.border.EmptyBorder(18, 26, 18, 26));
 
-        JLabel header = new JLabel("VOTER REGISTRATION DATA", JLabel.CENTER);
-        header.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        header.setForeground(Color.WHITE);
-        header.setBorder(BorderFactory.createEmptyBorder(15, 0, 10, 0));
+        JLabel header = new JLabel("VOTER REGISTRATION DATA");
+        header.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        header.setForeground(UITheme.WHITE);
+        topPanel.add(header, BorderLayout.WEST);
 
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         searchPanel.setOpaque(false);
 
-        JLabel searchLabel = new JLabel("Search Name: ");
-        searchLabel.setForeground(Color.WHITE);
-        searchLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        JLabel searchLabel = new JLabel(UITheme.Icons.person(UITheme.WHITE));
+        searchPanel.add(searchLabel);
 
-        searchField = new JTextField(20);
+        searchField = new UITheme.RoundedTextField(18);
+        searchField.setToolTipText("Search by name");
+        searchField.setPreferredSize(new Dimension(230, 38));
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) {
                 searchTable();
@@ -81,10 +74,8 @@ public class AdminViewVoter extends JPanel {
             }
         });
 
-        searchPanel.add(searchLabel);
         searchPanel.add(searchField);
-        topPanel.add(header, BorderLayout.CENTER);
-        topPanel.add(searchPanel, BorderLayout.SOUTH);
+        topPanel.add(searchPanel, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
 
         // --- 2. TABLE SETUP ---
@@ -104,46 +95,55 @@ public class AdminViewVoter extends JPanel {
         };
 
         table = new JTable(model);
-        table.setRowHeight(100);
         sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
 
-        // Header Styling
-        table.getTableHeader().setBackground(NAVBAR_BLUE);
-        table.getTableHeader().setForeground(Color.WHITE);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
-        table.getTableHeader().setReorderingAllowed(false);
+        UITheme.styleTable(table);
 
-        // Set Custom Renderer and Editor for the Action Column
+        table.getColumnModel().getColumn(0).setMaxWidth(70);
+        table.getColumnModel().getColumn(1).setMaxWidth(110);
+        table.getColumnModel().getColumn(8).setMaxWidth(110);
+        table.getColumnModel().getColumn(9).setMinWidth(190);
+        table.getColumnModel().getColumn(9).setMaxWidth(220);
+
+        table.getColumnModel().getColumn(8).setCellRenderer(new StatusBadgeRenderer());
         table.getColumnModel().getColumn(9).setCellRenderer(new ButtonRenderer());
         table.getColumnModel().getColumn(9).setCellEditor(new ButtonEditor(new JCheckBox()));
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        JScrollPane sp = new JScrollPane(table);
+        UITheme.styleScrollPane(sp);
+        add(sp, BorderLayout.CENTER);
         refreshData();
     }
 
     private void searchTable() {
         String text = searchField.getText();
-        if (text.trim().length() == 0) {
+        if (text.trim().isEmpty()) {
             sorter.setRowFilter(null);
-        } else {
-            // Index 3 is the "Name" column
-            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 3));
+            return;
+        }
+        try {
+            // Escape regex metacharacters to prevent regex injection / errors
+            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + Pattern.quote(text), 3));
+        } catch (java.util.regex.PatternSyntaxException ex) {
+            sorter.setRowFilter(null);
         }
     }
 
     public void refreshData() {
         model.setRowCount(0);
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery("SELECT * FROM voters")) {
+        String query = "SELECT id, voter_id, full_name, email, dob, address, mobile, image_path, status"
+                + " FROM voters ORDER BY id DESC";
+        try (Connection conn = Database.getConnection();
+                PreparedStatement ps = conn.prepareStatement(query);
+                ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 String path = rs.getString("image_path");
                 ImageIcon icon = null;
                 if (path != null && new File(path).exists()) {
                     ImageIcon temp = new ImageIcon(path);
-                    Image img = temp.getImage().getScaledInstance(90, 90, Image.SCALE_SMOOTH);
+                    Image img = temp.getImage().getScaledInstance(46, 46, Image.SCALE_SMOOTH);
                     icon = new ImageIcon(img);
                 }
 
@@ -159,26 +159,32 @@ public class AdminViewVoter extends JPanel {
         }
     }
 
+    // --- INNER CLASS: Status Badge Renderer ---
+    class StatusBadgeRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable t, Object value, boolean isS, boolean hasF, int r, int c) {
+            String status = value == null ? "" : value.toString();
+            UITheme.Pill pill = UITheme.pillForStatus(status);
+            return pill;
+        }
+    }
+
     // --- INNER CLASS: ButtonRenderer ---
     class ButtonRenderer extends JPanel implements TableCellRenderer {
         public ButtonRenderer() {
             setOpaque(true);
-            setLayout(new FlowLayout(FlowLayout.CENTER, 5, 15));
-            String[] labels = { "APPROVE", "REJECT" };
-            Color[] colors = { new Color(0, 128, 64), Color.RED };
-
-            for (int i = 0; i < 2; i++) {
-                JButton b = new JButton(labels[i]);
-                b.setBackground(colors[i]);
-                b.setForeground(Color.WHITE);
-                b.setFont(new Font("Segoe UI", Font.BOLD, 9));
-                add(b);
-            }
+            setLayout(new FlowLayout(FlowLayout.CENTER, 6, 10));
+            JButton app = UITheme.button("Approve", UITheme.GREEN);
+            app.setFont(UITheme.font(Font.BOLD, 11));
+            JButton rej = UITheme.button("Reject", UITheme.RED);
+            rej.setFont(UITheme.font(Font.BOLD, 11));
+            add(app);
+            add(rej);
         }
 
         @Override
         public Component getTableCellRendererComponent(JTable t, Object v, boolean isS, boolean hasF, int r, int c) {
-            setBackground(isS ? t.getSelectionBackground() : t.getBackground());
+            setBackground(isS ? t.getSelectionBackground() : UITheme.SURFACE);
             return this;
         }
     }
@@ -187,54 +193,52 @@ public class AdminViewVoter extends JPanel {
     class ButtonEditor extends DefaultCellEditor {
         protected JPanel panel;
         protected JButton btnApp, btnRej;
+        private int editingRow = -1;
 
         public ButtonEditor(JCheckBox checkBox) {
             super(checkBox);
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 15));
+            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 10));
+            panel.setBackground(UITheme.SURFACE);
 
-            btnApp = createBtn("APPROVE", new Color(0, 128, 64));
-            btnRej = createBtn("REJECT", Color.RED);
+            btnApp = UITheme.button("Approve", UITheme.GREEN);
+            btnApp.setFont(UITheme.font(Font.BOLD, 11));
+            btnRej = UITheme.button("Reject", UITheme.RED);
+            btnRej.setFont(UITheme.font(Font.BOLD, 11));
 
-            btnApp.addActionListener(
-                    e -> performAction("UPDATE voters SET status = 'Approved' WHERE voter_id = ?", "Approved"));
-            btnRej.addActionListener(
-                    e -> performAction("UPDATE voters SET status = 'Rejected' WHERE voter_id = ?", "Rejected"));
+            btnApp.addActionListener(e -> performAction("UPDATE voters SET status = 'Approved' WHERE voter_id = ?", "Approved"));
+            btnRej.addActionListener(e -> performAction("UPDATE voters SET status = 'Rejected' WHERE voter_id = ?", "Rejected"));
 
             panel.add(btnApp);
             panel.add(btnRej);
         }
 
-        private JButton createBtn(String txt, Color bg) {
-            JButton b = new JButton(txt);
-            b.setBackground(bg);
-            b.setForeground(Color.WHITE);
-            b.setFont(new Font("Segoe UI", Font.BOLD, 9));
-            b.setFocusPainted(false);
-            return b;
-        }
-
         private void performAction(String sql, String actionName) {
-            int row = table.getSelectedRow();
-            if (row == -1)
+            int row = editingRow;
+            if (row == -1 || row >= table.getRowCount()) {
                 return;
+            }
 
-            // Getting Voter ID from column index 2
+            // Column 2 is the Voter ID (view index == model index, no row sorter mapping needed for value fetch)
             String voterId = table.getValueAt(row, 2).toString();
 
-            try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+            try (Connection conn = Database.getConnection();
                     PreparedStatement pst = conn.prepareStatement(sql)) {
                 pst.setString(1, voterId);
                 pst.executeUpdate();
                 fireEditingStopped();
                 refreshData();
-                JOptionPane.showMessageDialog(null, "Voter " + actionName);
+                UITheme.showMessage(AdminViewVoter.this, "Voter " + actionName,
+                        "Voter " + actionName, JOptionPane.INFORMATION_MESSAGE);
             } catch (SQLException ex) {
                 ex.printStackTrace();
+                UITheme.showMessage(AdminViewVoter.this, "Error",
+                        "Action failed: " + ex.getMessage(), JOptionPane.ERROR_MESSAGE);
             }
         }
 
         @Override
         public Component getTableCellEditorComponent(JTable t, Object v, boolean isS, int r, int c) {
+            editingRow = r;
             panel.setBackground(t.getSelectionBackground());
             return panel;
         }

@@ -1,30 +1,30 @@
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridBagLayout;
 import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
 public class Userdrashboard extends JPanel {
-    private CardLayout cl; // Main CardLayout from parent (MainApp)
-    private JPanel contentPanel; // Main content panel from parent
+    private CardLayout cl;
+    private JPanel contentPanel;
     private CardLayout innerCL = new CardLayout();
     private JPanel innerBody = new JPanel(innerCL);
-    private JPanel sidebar; // Made global to toggle visibility
+    private JPanel sidebar;
+    private UITheme.SidebarItem profileItem, resultsItem;
 
     public Userdrashboard(CardLayout cl, JPanel contentPanel) {
         this.cl = cl;
@@ -33,22 +33,18 @@ public class Userdrashboard extends JPanel {
         setLayout(new BorderLayout());
 
         // --- 1. HEADER ---
-        JPanel topHeader = new JPanel(new BorderLayout());
-        topHeader.setBackground(new Color(63, 137, 187));
-        topHeader.setPreferredSize(new Dimension(0, 60));
-        topHeader.setBorder(new EmptyBorder(0, 15, 0, 20));
+        JPanel topHeader = new UITheme.HeaderBar();
+        topHeader.setLayout(new BorderLayout());
+        topHeader.setPreferredSize(new Dimension(0, 62));
+        topHeader.setBorder(new EmptyBorder(0, 18, 0, 20));
 
-        // LEFT SIDE: Hamburger Menu + Title
-        JPanel leftHeaderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
+        // LEFT: Hamburger Menu + Title
+        JPanel leftHeaderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 14));
         leftHeaderPanel.setOpaque(false);
 
-        // Hamburger Icon (Three bars)
-        JLabel menuToggle = new JLabel("\u2630"); // Unicode for hamburger icon
-        menuToggle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        menuToggle.setForeground(Color.WHITE);
+        JLabel menuToggle = new JLabel(UITheme.Icons.menu(UITheme.WHITE));
         menuToggle.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // Toggle Logic
         menuToggle.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -60,57 +56,63 @@ public class Userdrashboard extends JPanel {
 
         JLabel headerTxt = new JLabel("User Dashboard");
         headerTxt.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        headerTxt.setForeground(Color.white);
+        headerTxt.setForeground(UITheme.WHITE);
 
         leftHeaderPanel.add(menuToggle);
         leftHeaderPanel.add(headerTxt);
         topHeader.add(leftHeaderPanel, BorderLayout.WEST);
 
-        // RIGHT SIDE: Profile Dropdown
-        JLabel profileDropdown = new JLabel("\uD83D\uDC64  \u25BC");
-        profileDropdown.setFont(new Font("Segoe UI", Font.PLAIN, 18));
-        profileDropdown.setForeground(new Color(220, 220, 220));
-        profileDropdown.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        // RIGHT: Profile name + visible Logout button
+        JPanel profileWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 14));
+        profileWrap.setOpaque(false);
 
-        // Logout Popup
-        JPopupMenu logoutMenu = new JPopupMenu();
-        JMenuItem logoutItem = new JMenuItem("Logout");
-        logoutItem.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        logoutItem.addActionListener(e -> {
-            UserSession.clearSession();
+        JLabel profileName = new JLabel(UserSession.getFullName());
+        profileName.setFont(UITheme.font(Font.BOLD, 13));
+        profileName.setForeground(UITheme.WHITE);
+
+        JButton logoutBtn = new UITheme.RoundedButton("Logout", UITheme.RED, true);
+        logoutBtn.setIcon(UITheme.Icons.logout(UITheme.WHITE));
+        logoutBtn.setFont(UITheme.font(Font.BOLD, 12));
+        logoutBtn.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+        logoutBtn.addActionListener(e -> {
+            UserSession.logout();
             Window win = SwingUtilities.getWindowAncestor(this);
             if (win instanceof MainApp) {
                 ((MainApp) win).setMainNavbarVisible(true);
             }
-            innerCL.show(innerBody, "HOME");
+            innerCL.show(innerBody, "PROFILE");
             cl.show(contentPanel, "Home");
         });
-        logoutMenu.add(logoutItem);
 
-        profileDropdown.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                logoutMenu.show(profileDropdown, 0, profileDropdown.getHeight());
-            }
-        });
-        topHeader.add(profileDropdown, BorderLayout.EAST);
+        profileWrap.add(profileName);
+        profileWrap.add(logoutBtn);
+        topHeader.add(profileWrap, BorderLayout.EAST);
 
         // --- 2. SIDEBAR ---
         sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBackground(new Color(40, 60, 70));
-        sidebar.setPreferredSize(new Dimension(180, 0));
-        sidebar.setBorder(new EmptyBorder(30, 20, 0, 0));
+        sidebar.setBackground(UITheme.SIDEBAR);
+        sidebar.setPreferredSize(new Dimension(240, 0));
+        sidebar.setBorder(new EmptyBorder(22, 16, 0, 16));
 
-        // sidebar.add(createNavItem("Dashboard", "HOME"));
-        // sidebar.add(Box.createRigidArea(new Dimension(0, 40)));
-        sidebar.add(createNavItem("Profile", "PROFILE"));
-        sidebar.add(Box.createRigidArea(new Dimension(0, 30)));
-        sidebar.add(createNavItem("Voting Results", "RESULT"));
+        JLabel brand = new JLabel("MY DASHBOARD");
+        brand.setFont(UITheme.font(Font.BOLD, 13));
+        brand.setForeground(UITheme.TEXT_MUTED);
+        brand.setBorder(new EmptyBorder(0, 12, 18, 0));
+        sidebar.add(brand);
+
+        profileItem = new UITheme.SidebarItem("Profile", UITheme.Icons.person(UITheme.SIDEBAR_ITEM));
+        resultsItem = new UITheme.SidebarItem("Voting Results", UITheme.Icons.chart(UITheme.SIDEBAR_ITEM));
+
+        profileItem.setActive(true);
+        profileItem.addMouseListener(navClick("PROFILE"));
+        resultsItem.addMouseListener(navClick("RESULT"));
+
+        sidebar.add(profileItem);
+        sidebar.add(Box.createRigidArea(new Dimension(0, 4)));
+        sidebar.add(resultsItem);
 
         // --- 3. INNER PAGES ---
-        // innerBody.add(createViewPanel("Welcome User Dashboard"), "HOME");
-
         try {
             innerBody.add(new VoterDetailsPage(cl, contentPanel), "PROFILE");
             innerBody.add(new VotingResultsPage(), "RESULT");
@@ -125,34 +127,27 @@ public class Userdrashboard extends JPanel {
         add(innerBody, BorderLayout.CENTER);
     }
 
-    private JLabel createNavItem(String text, String cardName) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        label.setForeground(new Color(220, 220, 220));
-        label.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        label.addMouseListener(new MouseAdapter() {
+    private MouseAdapter navClick(String cardName) {
+        return new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                if (!UserSession.isUsable()) {
+                    UITheme.showMessage(Userdrashboard.this, "Session Expired",
+                            "Your session has expired. Please log in again.",
+                            JOptionPane.WARNING_MESSAGE);
+                    cl.show(contentPanel, "Home");
+                    return;
+                }
                 innerCL.show(innerBody, cardName);
+                profileItem.setActive(cardName.equals("PROFILE"));
+                resultsItem.setActive(cardName.equals("RESULT"));
             }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                label.setForeground(Color.WHITE);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                label.setForeground(new Color(220, 220, 220));
-            }
-        });
-        return label;
+        };
     }
 
     private JPanel createViewPanel(String text) {
-        JPanel p = new JPanel(new GridBagLayout());
-        p.setBackground(new Color(245, 247, 250));
+        JPanel p = new JPanel(new java.awt.GridBagLayout());
+        p.setBackground(UITheme.SURFACE_MUTED);
         JLabel lbl = new JLabel(text);
         lbl.setFont(new Font("Segoe UI", Font.PLAIN, 20));
         p.add(lbl);

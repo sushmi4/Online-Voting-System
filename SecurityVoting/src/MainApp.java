@@ -1,18 +1,15 @@
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Color;
 import java.awt.Component;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Image;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -26,14 +23,16 @@ public class MainApp extends JFrame {
     private JPanel headerPanel;
 
     public MainApp() {
-        setTitle("Online Voting System");
+        setTitle("Secure Online Voting System");
         setSize(1200, 750);
+        setMinimumSize(new Dimension(1000, 640));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
+        UITheme.tuneLookAndFeel();
+
         // 1. Setup Background Content Pane
-        String bgPath = "C:\\Gmailsecurity\\SecurityVoting\\vote.png";
-        setContentPane(new BackgroundPanel(bgPath));
+        setContentPane(new UITheme.GradientBackground());
         setLayout(new BorderLayout());
 
         // 2. Setup CardLayout and Pages
@@ -41,33 +40,15 @@ public class MainApp extends JFrame {
         cardPanel = new JPanel(cl);
         cardPanel.setOpaque(false);
 
-        // Landing/Home Page (Transparent to show background)
-        JPanel homePage = new JPanel();
-        homePage.setOpaque(false);
-        cardPanel.add(homePage, "Home");
-
-        // JPanel welcomeScreen = new JPanel(); // fixed
-        // welcomeScreen.setBackground(Color.WHITE);
-        // welcomeScreen.add(new JLabel(
-        // "<html><center><h1 style='color:#14213d;'>Welcome to Admin Control
-        // Panel</h1>"
-        // + "<p>Select an option from the menu above to begin.</p></center></html>"));
-
-        // cardPanel.add(welcomeScreen, "Welcome"); // Use cardPanel, not bodyPanel
+        cardPanel.add(new HomePage(cl, cardPanel), "Home");
 
         try {
-            // Registering all functional pages
             cardPanel.add(new AboutUsPage(), "AboutUs");
             cardPanel.add(new UserLogin(cl, cardPanel), "UserLogin");
             cardPanel.add(new UserRegister(cl, cardPanel), "UserRegister");
-            // cardPanel.add(new ResetPassword(cl, cardPanel), "ResetPassword");
-
             cardPanel.add(new AdminLogin(cl, cardPanel), "AdminLogin");
-
-            // Registering Result and Dashboard
             cardPanel.add(new UserResult(cl, cardPanel), "Result");
             cardPanel.add(new AdminDashboard(cl, cardPanel), "AdminDashboard");
-
         } catch (Exception e) {
             System.err.println("Note: Component error: " + e.getMessage());
         }
@@ -79,53 +60,76 @@ public class MainApp extends JFrame {
         add(cardPanel, BorderLayout.CENTER);
 
         cl.show(cardPanel, "Home");
+
+        // Clear any lingering session when the application closes
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                UserSession.logout();
+            }
+        });
     }
 
-    // public void setHeaderVisible(boolean visible) {
-    // if (headerPanel != null) {
-    // headerPanel.setVisible(visible);
-    // revalidate();
-    // repaint();
-    // }
-    // }
-
     private JPanel createNavbar() {
-        JPanel nav = new JPanel(new BorderLayout());
-        nav.setBackground(new Color(0, 33, 61));
-        nav.setPreferredSize(new Dimension(0, 70));
-        nav.setBorder(BorderFactory.createEmptyBorder(0, 30, 0, 30));
+        JPanel nav = new JPanel(new GridBagLayout());
+        nav.setBackground(UITheme.SURFACE);
+        nav.setPreferredSize(new Dimension(0, 68));
+        nav.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER),
+                BorderFactory.createEmptyBorder(0, 24, 0, 20)));
 
-        JLabel title = new JLabel("VOTING SYSTEM");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        title.setForeground(Color.WHITE);
-        nav.add(title, BorderLayout.WEST);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridy = 0;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.VERTICAL;
+        gbc.anchor = GridBagConstraints.WEST;
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 20));
-        btnPanel.setOpaque(false);
+        // Brand
+        JPanel brand = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        brand.setOpaque(false);
+        JLabel logo = new JLabel(UITheme.logoIcon(34));
+        JLabel title = new JLabel("SecureVote");
+        title.setFont(UITheme.font(Font.BOLD, 19));
+        title.setForeground(UITheme.PRIMARY_DARK);
+        brand.add(logo);
+        brand.add(title);
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        nav.add(brand, gbc);
 
-        // Navigation Items
-        btnPanel.add(createNavLink("HOME", "Home"));
-        btnPanel.add(createNavLink("ABOUT US", "AboutUs"));
-        btnPanel.add(createNavLink("USER", "UserLogin"));
-        btnPanel.add(createNavLink("ADMIN", "AdminLogin"));
-        btnPanel.add(createNavLink("RESULT", "Result"));
+        // Spacer keeps links pinned to the right edge
+        JPanel spacer = new JPanel();
+        spacer.setOpaque(false);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        nav.add(spacer, gbc);
 
-        nav.add(btnPanel, BorderLayout.EAST);
+        // Nav links
+        JPanel links = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        links.setOpaque(false);
+        addNavLink(links, "Home", "Home");
+        addNavLink(links, "About", "AboutUs");
+        addNavLink(links, "Voter Login", "UserLogin");
+        addNavLink(links, "Admin Login", "AdminLogin");
+        addNavLink(links, "Results", "Result");
+        gbc.gridx = 2;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.VERTICAL;
+        gbc.anchor = GridBagConstraints.EAST;
+        nav.add(links, gbc);
+
         return nav;
     }
 
-    // --- FULL REFRESH LOGIC INTEGRATED HERE ---
-    private JButton createNavLink(String text, String cardName) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btn.setForeground(new Color(0, 255, 127));
-        btn.setContentAreaFilled(false);
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
+    private void addNavLink(JPanel panel, String text, String cardName) {
+        JButton btn = new UITheme.TextButton(text);
         btn.addActionListener(e -> {
-            // Logic to refresh data when the RESULT button is clicked
+            // Auto-expire session if it has been idle too long
+            if (UserSession.isLoggedIn() && UserSession.isExpired()) {
+                UserSession.logout();
+            }
+
             if (cardName.equals("Result")) {
                 for (Component comp : cardPanel.getComponents()) {
                     if (comp instanceof UserResult) {
@@ -135,18 +139,7 @@ public class MainApp extends JFrame {
             }
             cl.show(cardPanel, cardName);
         });
-
-        btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) {
-                btn.setForeground(Color.WHITE);
-            }
-
-            public void mouseExited(MouseEvent e) {
-                btn.setForeground(new Color(0, 255, 127));
-            }
-        });
-
-        return btn;
+        panel.add(btn);
     }
 
     public void setMainNavbarVisible(boolean visible) {
@@ -159,21 +152,5 @@ public class MainApp extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new MainApp().setVisible(true));
-    }
-
-    class BackgroundPanel extends JPanel {
-        private Image img;
-
-        public BackgroundPanel(String path) {
-            this.img = new ImageIcon(path).getImage();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (img != null) {
-                g.drawImage(img, 0, 0, getWidth(), getHeight(), this);
-            }
-        }
     }
 }

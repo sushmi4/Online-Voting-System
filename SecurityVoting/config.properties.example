@@ -1,0 +1,25 @@
+# =====================================================
+# Online Voting System - Configuration (template)
+# Copy this file to config.properties and fill in values.
+# =====================================================
+
+# --- Database ---
+db.url=jdbc:mysql://localhost:3306/onlinevoting_db?useSSL=false&serverTimezone=UTC
+db.user=voting_app
+db.password=YOUR_DB_PASSWORD
+
+# --- Election ---
+election.year=2026
+voter.limit=2000
+
+# --- Session ---
+session.timeout.minutes=30
+
+# --- Email (SMTP) used for OTP password reset ---
+# Gmail example: host=smtp.gmail.com, port=587, from=you@gmail.com,
+# password=<your Gmail App Password>. Leave empty to disable OTP email.
+smtp.host=
+smtp.port=587
+smtp.from=
+smtp.password=
+smtp.from.name=Online Voting System

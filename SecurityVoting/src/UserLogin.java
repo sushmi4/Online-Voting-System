@@ -1,187 +1,177 @@
-import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Image;
 import java.awt.Insets;
-import java.awt.RenderingHints;
+import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.MatteBorder;
 
 public class UserLogin extends JPanel {
 
-    private Image backgroundImage;
-    private boolean isPasswordVisible = false; // Flag to track visibility
-
     public UserLogin(CardLayout cl, JPanel contentPanel) {
-
-        // Load Background Image
-        try {
-            backgroundImage = new ImageIcon("C:/Gmailsecurity/SecurityVoting/vote.png").getImage();
-        } catch (Exception e) {
-            System.out.println("Image not found!");
-        }
-
         contentPanel.add(new ResetPassword(cl, contentPanel), "ResetPassword");
 
+        setOpaque(false);
         setLayout(new GridBagLayout());
 
-        // Glass Rounded Panel
-        JPanel loginBox = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(255, 255, 255, 200));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 40, 40);
-                g2.dispose();
-            }
-        };
-
-        loginBox.setOpaque(false);
-        loginBox.setPreferredSize(new Dimension(420, 400)); // Slightly increased height
-        loginBox.setLayout(new BoxLayout(loginBox, BoxLayout.Y_AXIS));
-        loginBox.setBorder(new EmptyBorder(40, 50, 40, 50));
-
-        // Title
-        JLabel title = new JLabel("VOTER LOGIN");
-        title.setFont(new Font("Arial", Font.BOLD, 30));
-        title.setForeground(new Color(20, 40, 80));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        // Fields
-        JPanel fieldsPanel = new JPanel(new GridBagLayout());
-        fieldsPanel.setOpaque(false);
+        UITheme.Card loginBox = new UITheme.Card(new GridBagLayout());
+        loginBox.setBorder(new EmptyBorder(36, 46, 30, 46));
+        loginBox.setPreferredSize(new Dimension(440, 500));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(12, 10, 12, 10);
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
+
+        int row = 0;
+
+        // Top filler keeps the card content vertically balanced
+        gbc.gridy = row++;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        JPanel topFill = new JPanel();
+        topFill.setOpaque(false);
+        loginBox.add(topFill, gbc);
+        gbc.weighty = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.CENTER;
+
+        JLabel icon = new JLabel(UITheme.logoIcon(56));
+        gbc.gridy = row++;
+        loginBox.add(icon, gbc);
+
+        JLabel title = new JLabel("Voter Login");
+        title.setFont(UITheme.font(Font.BOLD, 28));
+        title.setForeground(UITheme.PRIMARY_DARK);
+        gbc.gridy = row++;
+        loginBox.add(title, gbc);
+
+        JLabel subtitle = new JLabel("Sign in to cast your vote");
+        subtitle.setFont(UITheme.font(Font.PLAIN, 13));
+        subtitle.setForeground(UITheme.TEXT_MUTED);
+        gbc.gridy = row++;
+        loginBox.add(subtitle, gbc);
+
+        // Email label (flush left, above the field)
         gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(18, 0, 6, 0);
+        JLabel lblEmail = new JLabel("Email");
+        lblEmail.setFont(UITheme.font(Font.BOLD, 12));
+        lblEmail.setForeground(UITheme.TEXT_MUTED);
+        gbc.gridy = row++;
+        loginBox.add(lblEmail, gbc);
 
-        JLabel lblEmail = new JLabel("Email:");
-        lblEmail.setFont(new Font("Arial", Font.BOLD, 14));
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        fieldsPanel.add(lblEmail, gbc);
+        JTextField emailField = new UITheme.RoundedTextField(18);
+        emailField.setPreferredSize(new Dimension(0, 44));
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy = row++;
+        loginBox.add(emailField, gbc);
 
-        JTextField emailField = new JTextField(18);
-        gbc.gridx = 1;
-        fieldsPanel.add(emailField, gbc);
+        // Password label
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(16, 0, 6, 0);
+        JLabel lblPass = new JLabel("Password");
+        lblPass.setFont(UITheme.font(Font.BOLD, 12));
+        lblPass.setForeground(UITheme.TEXT_MUTED);
+        gbc.gridy = row++;
+        loginBox.add(lblPass, gbc);
 
-        JLabel lblPass = new JLabel("Password:");
-        lblPass.setFont(new Font("Arial", Font.BOLD, 14));
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        fieldsPanel.add(lblPass, gbc);
+        // Password field with built-in eye toggle (inside the box)
+        JPasswordField passField = new UITheme.RoundedPasswordField(15, true);
+        passField.setPreferredSize(new Dimension(0, 44));
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy = row++;
+        loginBox.add(passField, gbc);
 
-        // --- PASSWORD PANEL WITH TOGGLE ---
-        JPanel passContainer = new JPanel(new BorderLayout());
-        passContainer.setBackground(Color.WHITE);
-        passContainer.setBorder(new MatteBorder(1, 1, 1, 1, Color.GRAY)); // Matches standard field look
+        JButton loginBtn = UITheme.button("SIGN IN");
+        loginBtn.setPreferredSize(new Dimension(240, 44));
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(22, 0, 0, 0);
+        gbc.gridy = row++;
+        loginBox.add(loginBtn, gbc);
 
-        JPasswordField passField = new JPasswordField(15);
-        passField.setBorder(null); // Remove inner border
-
-        JLabel eyeIcon = new JLabel("👁"); // You can replace with new ImageIcon("eye.png")
-        eyeIcon.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        eyeIcon.setBorder(new EmptyBorder(0, 5, 0, 5));
-
-        passContainer.add(passField, BorderLayout.CENTER);
-        passContainer.add(eyeIcon, BorderLayout.EAST);
-
-        gbc.gridx = 1;
-        fieldsPanel.add(passContainer, gbc);
-
-        // Toggle logic
-        eyeIcon.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (isPasswordVisible) {
-                    passField.setEchoChar('•'); // Hide password
-                    eyeIcon.setText("👁");
-                } else {
-                    passField.setEchoChar((char) 0); // Show password
-                    eyeIcon.setText("🔒");
-                }
-                isPasswordVisible = !isPasswordVisible;
-            }
-        });
-
-        // Action Panel
-        JPanel actionPanel = new JPanel();
-        actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.Y_AXIS));
-        actionPanel.setOpaque(false);
-
-        JPanel loginRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        loginRow.setOpaque(false);
-
-        JButton loginBtn = new JButton("LOGIN");
-        loginBtn.setPreferredSize(new Dimension(120, 40));
-        loginBtn.setBackground(new Color(20, 40, 80));
-        loginBtn.setForeground(Color.WHITE);
-        loginBtn.setFont(new Font("Arial", Font.BOLD, 13));
-        loginBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        loginRow.add(loginBtn);
-
-        JLabel lblRegister = new JLabel("New User? Register");
-        lblRegister.setForeground(new Color(0, 102, 204));
+        JLabel lblRegister = new JLabel("New user?  Create an account");
+        lblRegister.setFont(UITheme.font(Font.BOLD, 13));
+        lblRegister.setForeground(UITheme.ACCENT);
         lblRegister.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        JPanel registerRow = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        registerRow.setOpaque(false);
-        registerRow.add(lblRegister);
+        gbc.insets = new Insets(14, 0, 0, 0);
+        gbc.gridy = row++;
+        loginBox.add(lblRegister, gbc);
 
-        JLabel lblForgotPassword = new JLabel("ResetPassword?");
-        lblForgotPassword.setForeground(new Color(0, 102, 204));
+        JLabel lblForgotPassword = new JLabel("Forgot your password?  Reset it");
+        lblForgotPassword.setFont(UITheme.font(Font.PLAIN, 12));
+        lblForgotPassword.setForeground(UITheme.TEXT_MUTED);
         lblForgotPassword.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        JPanel forgotRow = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        forgotRow.setOpaque(false);
-        forgotRow.add(lblForgotPassword);
+        gbc.insets = new Insets(6, 0, 0, 0);
+        gbc.gridy = row++;
+        loginBox.add(lblForgotPassword, gbc);
 
-        actionPanel.add(loginRow);
-        actionPanel.add(registerRow);
-        actionPanel.add(forgotRow);
-
-        loginBox.add(title);
-        loginBox.add(Box.createRigidArea(new Dimension(0, 30)));
-        loginBox.add(fieldsPanel);
-        loginBox.add(Box.createRigidArea(new Dimension(0, 25)));
-        loginBox.add(actionPanel);
+        // Bottom filler
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        JPanel bottomFill = new JPanel();
+        bottomFill.setOpaque(false);
+        gbc.gridy = row++;
+        loginBox.add(bottomFill, gbc);
 
         add(loginBox);
 
         // --- LISTENERS ---
         loginBtn.addActionListener(e -> {
-            String emailText = emailField.getText();
+            String emailText = emailField.getText().trim();
             String passwordText = new String(passField.getPassword());
-            if (DBConnection.validateLogin(emailText, passwordText)) {
-                if (UserSession.getStatus().equalsIgnoreCase("Approved")) {
+
+            if (emailText.isEmpty() || passwordText.isEmpty()) {
+                UITheme.showMessage(this, "Login Required",
+                        "Please enter email and password.",
+                        javax.swing.JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            String result = DBConnection.validateLogin(emailText, passwordText);
+            switch (result) {
+                case "LOCKED":
+                    UITheme.showMessage(this, "Account Locked",
+                            "Account temporarily locked after multiple failed attempts.\n"
+                                    + "Please try again later.",
+                            javax.swing.JOptionPane.WARNING_MESSAGE);
+                    break;
+                case "OK":
+                    if (!"Approved".equalsIgnoreCase(UserSession.getStatus())) {
+                        UITheme.showMessage(this, "Pending Approval",
+                                "Access Denied: Your account status is " + UserSession.getStatus(),
+                                javax.swing.JOptionPane.WARNING_MESSAGE);
+                        UserSession.logout();
+                        break;
+                    }
+                    passField.setText("");
+                    emailField.setText("");
+                    hideMainNavbar();
                     contentPanel.add(new Userdrashboard(cl, contentPanel), "VoterPage");
                     cl.show(contentPanel, "VoterPage");
-                } else {
-                    JOptionPane.showMessageDialog(this, "Access Denied: " + UserSession.getStatus());
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Invalid credentials.");
+                    break;
+                default:
+                    UITheme.showMessage(this, "Login Failed",
+                            "Invalid email or password.",
+                            javax.swing.JOptionPane.ERROR_MESSAGE);
+                    break;
             }
         });
 
@@ -198,11 +188,10 @@ public class UserLogin extends JPanel {
         });
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        if (backgroundImage != null) {
-            g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+    private void hideMainNavbar() {
+        Window win = SwingUtilities.getWindowAncestor(this);
+        if (win instanceof MainApp) {
+            ((MainApp) win).setMainNavbarVisible(false);
         }
     }
 }

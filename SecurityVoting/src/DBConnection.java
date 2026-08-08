@@ -1,33 +1,51 @@
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public class DBConnection {
 
-    private static final String URL = "jdbc:mysql://localhost:3306/onlinevoting_db";
-    private static final String USER = "root";
-    private static final String PASS = "";
+    private static final int MAX_ATTEMPTS = 5;
+    private static final long LOCK_MINUTES = 5;
 
-    // ================= DATABASE CONNECTION =================
-    public static Connection getConnection() throws Exception {
-        return DriverManager.getConnection(URL, USER, PASS);
+    private DBConnection() {
     }
 
-    // ================= LOGIN =================
-    public static boolean validateLogin(String email, String password) {
-        String sql = "SELECT * FROM voters WHERE email=? AND password=?";
-        try (Connection conn = getConnection();
+    // ================= LOGIN (with brute-force lockout) =================
+    /**
+     * Returns:
+     *  - "OK"                when credentials are valid (session is set)
+     *  - "LOCKED"            when the account is temporarily locked
+     *  - "INVALID"           on wrong credentials / unknown account
+     */
+    public static String validateLogin(String email, String password) {
+        String sql = "SELECT * FROM voters WHERE email=?";
+        try (Connection conn = Database.getConnection();
                 PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setString(1, email);
-            pst.setString(2, PasswordHasher.hashPassword(password));
+            try (ResultSet rs = pst.executeQuery()) {
 
-            ResultSet rs = pst.executeQuery();
-            if (rs.next()) {
-                System.out.println("Login success for voter: " + rs.getString("voter_id"));
+                if (!rs.next()) {
+                    // Never reveal whether an account exists
+                    return "INVALID";
+                }
 
-                UserSession.setSession(
+                if (isLocked(rs)) {
+                    return "LOCKED";
+                }
+
+                String storedHash = rs.getString("password");
+                if (!PasswordHasher.verifyPassword(password, storedHash)) {
+                    registerFailedAttempt(conn, email);
+                    return "INVALID";
+                }
+
+                // Success: reset failure counters and open the session
+                resetFailedAttempts(conn, email);
+                UserSession.openSession(
                         rs.getString("full_name"),
                         rs.getString("voter_id"),
                         rs.getString("email"),
@@ -35,37 +53,68 @@ public class DBConnection {
                         rs.getString("status"),
                         rs.getString("dob"),
                         rs.getString("image_path"),
-                        "", "",
-                        rs.getString("address"));
-                return true;
+                        rs.getString("address"),
+                        UserSession.Role.VOTER);
+
+                // Refresh locked-until / attempt state in the session
+                UserSession.touch();
+                return "OK";
             }
         } catch (Exception e) {
             System.out.println("Login Error: " + e.getMessage());
+            return "INVALID";
         }
-        return false;
+    }
+
+    private static boolean isLocked(ResultSet rs) throws SQLException {
+        Timestamp lockedUntil = rs.getTimestamp("locked_until");
+        return lockedUntil != null && lockedUntil.toLocalDateTime().isAfter(LocalDateTime.now());
+    }
+
+    private static void registerFailedAttempt(Connection conn, String email) throws SQLException {
+        int attempts;
+        try (PreparedStatement sel = conn.prepareStatement(
+                "SELECT failed_attempts FROM voters WHERE email=?")) {
+            sel.setString(1, email);
+            try (ResultSet rs = sel.executeQuery()) {
+                attempts = rs.next() ? rs.getInt(1) + 1 : 1;
+            }
+        }
+        LocalDateTime lockUntil = attempts >= MAX_ATTEMPTS ? LocalDateTime.now().plusMinutes(LOCK_MINUTES) : null;
+        try (PreparedStatement upd = conn.prepareStatement(
+                "UPDATE voters SET failed_attempts=?, locked_until=? WHERE email=?")) {
+            upd.setInt(1, attempts);
+            upd.setTimestamp(2, lockUntil == null ? null : Timestamp.valueOf(lockUntil));
+            upd.setString(3, email);
+            upd.executeUpdate();
+        }
+    }
+
+    private static void resetFailedAttempts(Connection conn, String email) throws SQLException {
+        try (PreparedStatement upd = conn.prepareStatement(
+                "UPDATE voters SET failed_attempts=0, locked_until=NULL WHERE email=?")) {
+            upd.setString(1, email);
+            upd.executeUpdate();
+        }
     }
 
     // ================= RESET / UPDATE PASSWORD =================
     public static boolean updatePassword(String email, String newPassword) {
-        boolean isUpdated = false;
-        // We use the same PasswordHasher used in registration and login
-        String sql = "UPDATE voters SET password = ? WHERE email = ?";
-
-        try (Connection conn = getConnection();
+        String sql = "UPDATE voters SET password=?, failed_attempts=0, locked_until=NULL WHERE email=?";
+        try (Connection conn = Database.getConnection();
                 PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setString(1, PasswordHasher.hashPassword(newPassword));
             pst.setString(2, email);
-
-            int rowsAffected = pst.executeUpdate();
-            if (rowsAffected > 0) {
-                isUpdated = true;
-                System.out.println("Password updated successfully for: " + email);
-            }
+            return pst.executeUpdate() > 0;
         } catch (Exception e) {
             System.out.println("Update Password Error: " + e.getMessage());
+            return false;
         }
-        return isUpdated;
+    }
+
+    public static boolean emailExists(String email) {
+        return countBy("SELECT COUNT(*) FROM voters WHERE email=?", email) > 0;
     }
 
     // ================= REGISTER =================
@@ -73,8 +122,9 @@ public class DBConnection {
             String password, String dob, String mobile,
             String imagePath, String address) {
 
-        String sql = "INSERT INTO voters (full_name,voter_id,email,password,dob,mobile,image_path,address,status) VALUES (?,?,?,?,?,?,?,?,?)";
-        try (Connection conn = getConnection();
+        String sql = "INSERT INTO voters (full_name,voter_id,email,password,dob,mobile,image_path,address,status)"
+                + " VALUES (?,?,?,?,?,?,?,?,'Pending')";
+        try (Connection conn = Database.getConnection();
                 PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setString(1, fullName);
@@ -85,7 +135,6 @@ public class DBConnection {
             pst.setString(6, mobile);
             pst.setString(7, imagePath);
             pst.setString(8, address);
-            pst.setString(9, "Pending");
 
             return pst.executeUpdate() > 0;
         } catch (Exception e) {
@@ -97,7 +146,7 @@ public class DBConnection {
     // ================= UPDATE PROFILE =================
     public static boolean updateVoterContactInfo(String email, String newVoterId, String newMobile) {
         String sql = "UPDATE voters SET voter_id=?, mobile=? WHERE email=?";
-        try (Connection conn = getConnection();
+        try (Connection conn = Database.getConnection();
                 PreparedStatement pst = conn.prepareStatement(sql)) {
 
             pst.setString(1, newVoterId);
@@ -105,16 +154,8 @@ public class DBConnection {
             pst.setString(3, email);
 
             if (pst.executeUpdate() > 0) {
-                UserSession.setSession(
-                        UserSession.getFullName(),
-                        newVoterId,
-                        UserSession.getEmail(),
-                        newMobile,
-                        UserSession.getStatus(),
-                        UserSession.getDob(),
-                        UserSession.getImagePath(),
-                        "", "",
-                        UserSession.getAddress());
+                UserSession.setVoterId(newVoterId);
+                UserSession.setMobile(newMobile);
                 return true;
             }
         } catch (Exception e) {
@@ -125,44 +166,31 @@ public class DBConnection {
 
     // ================= CHECK CONSTRAINTS =================
     public static boolean voterIdExists(String voterId) {
-        String sql = "SELECT COUNT(*) FROM voters WHERE voter_id=?";
-        try (Connection conn = getConnection();
-                PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setString(1, voterId);
-            ResultSet rs = pst.executeQuery();
-            if (rs.next())
-                return rs.getInt(1) > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+        return countBy("SELECT COUNT(*) FROM voters WHERE voter_id=?", voterId) > 0;
     }
 
     public static boolean mobileExists(String mobile) {
-        String sql = "SELECT COUNT(*) FROM voters WHERE mobile=?";
-        try (Connection conn = getConnection();
-                PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setString(1, mobile);
-            ResultSet rs = pst.executeQuery();
-            if (rs.next())
-                return rs.getInt(1) > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+        return countBy("SELECT COUNT(*) FROM voters WHERE mobile=?", mobile) > 0;
     }
 
-    public static boolean emailExists(String email) {
-        String sql = "SELECT COUNT(*) FROM voters WHERE email=?";
-        try (Connection conn = getConnection();
+    public static boolean emailExistsExcept(String email, String currentEmail) {
+        return countBy("SELECT COUNT(*) FROM voters WHERE email=? AND email<>?", email, currentEmail) > 0;
+    }
+
+    private static int countBy(String sql, String... params) {
+        try (Connection conn = Database.getConnection();
                 PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setString(1, email);
-            ResultSet rs = pst.executeQuery();
-            if (rs.next())
-                return rs.getInt(1) > 0;
+            for (int i = 0; i < params.length; i++) {
+                pst.setString(i + 1, params[i]);
+            }
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return false;
+        return 0;
     }
 }
