@@ -59,6 +59,7 @@ public final class UITheme {
     public static final Color ACCENT_LIGHT = new Color(0xEFF6FF);   // blue-50
     public static final Color SURFACE = Color.WHITE;
     public static final Color SURFACE_MUTED = new Color(0xF1F5F9);  // slate-100
+    public static final Color TABLE_STRIPE = new Color(0xF8FAFC);   // slate-50 (table zebra)
     public static final Color BORDER = new Color(0xE2E8F0);         // slate-200
     public static final Color GREEN = new Color(0x059669);          // emerald-600
     public static final Color GREEN_BG = new Color(0xD1FAE5);       // emerald-100
@@ -535,7 +536,7 @@ public final class UITheme {
             }
             setHorizontalAlignment(value instanceof Icon ? SwingConstants.CENTER : SwingConstants.LEFT);
             if (!isSelected) {
-                setBackground(row % 2 == 0 ? SURFACE : SURFACE_MUTED);
+                setBackground(row % 2 == 0 ? SURFACE : TABLE_STRIPE);
             }
             setForeground(isSelected ? WHITE : TEXT_DARK);
             setFont(font(isSelected ? Font.BOLD : Font.PLAIN, 13));

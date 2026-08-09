@@ -140,7 +140,9 @@ public class VoterDetailsPage extends JPanel {
         table.setRowHeight(64);
         UITheme.styleTable(table);
         table.getColumnModel().getColumn(0).setMaxWidth(70);
-        table.getColumnModel().getColumn(1).setMaxWidth(100);
+        table.getColumnModel().getColumn(1).setMinWidth(100);
+        table.getColumnModel().getColumn(1).setPreferredWidth(120);
+        table.getColumnModel().getColumn(1).setMaxWidth(130);
         table.getColumnModel().getColumn(3).setMaxWidth(140);
         table.getColumnModel().getColumn(3).setCellRenderer(new ActionRenderer());
 

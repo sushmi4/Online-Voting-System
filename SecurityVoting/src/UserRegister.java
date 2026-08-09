@@ -55,7 +55,6 @@ public class UserRegister extends JPanel {
 
         UITheme.Card card = new UITheme.Card();
         card.setBorder(new EmptyBorder(30, 44, 30, 44));
-        card.setPreferredSize(new Dimension(760, 720));
 
         JPanel inner = new JPanel(new BorderLayout(0, 16));
         inner.setOpaque(false);
@@ -77,7 +76,7 @@ public class UserRegister extends JPanel {
         nameField = new UITheme.RoundedTextField(20);
         vIdField = new UITheme.RoundedTextField(20);
         emailField = new UITheme.RoundedTextField(20);
-        passField = new UITheme.RoundedPasswordField(20);
+        passField = new UITheme.RoundedPasswordField(20, true);
         mobField = new UITheme.RoundedTextField(20);
 
         addrArea = new JTextArea(3, 20);
@@ -167,12 +166,11 @@ public class UserRegister extends JPanel {
         gbc.insets = new Insets(6, 8, 0, 8);
         formPanel.add(loginLink, gbc);
 
-        // Scrollable card body
-        JScrollPane scrollPane = new JScrollPane(formPanel);
-        scrollPane.setBorder(null);
-        UITheme.styleScrollPane(scrollPane);
+        // Keep the form at a fixed width; height follows the content so the
+        // whole card scrolls in a single outer scroll pane (like AboutUsPage).
+        formPanel.setPreferredSize(new Dimension(760, formPanel.getPreferredSize().height));
 
-        inner.add(scrollPane, BorderLayout.CENTER);
+        inner.add(formPanel, BorderLayout.CENTER);
         card.add(inner, BorderLayout.CENTER);
 
         centerWrapper.add(card);
@@ -183,6 +181,7 @@ public class UserRegister extends JPanel {
         outerScroll.getViewport().setOpaque(false);
         outerScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         outerScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        outerScroll.getViewport().setBorder(null);
 
         add(outerScroll, BorderLayout.CENTER);
     }

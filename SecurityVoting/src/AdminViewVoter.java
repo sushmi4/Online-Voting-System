@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.util.regex.Pattern;
 
 import javax.swing.DefaultCellEditor;
+import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -102,7 +103,9 @@ public class AdminViewVoter extends JPanel {
 
         table.getColumnModel().getColumn(0).setMaxWidth(70);
         table.getColumnModel().getColumn(1).setMaxWidth(110);
-        table.getColumnModel().getColumn(8).setMaxWidth(110);
+        table.getColumnModel().getColumn(8).setMinWidth(100);
+        table.getColumnModel().getColumn(8).setPreferredWidth(120);
+        table.getColumnModel().getColumn(8).setMaxWidth(130);
         table.getColumnModel().getColumn(9).setMinWidth(190);
         table.getColumnModel().getColumn(9).setMaxWidth(220);
 
@@ -163,9 +166,23 @@ public class AdminViewVoter extends JPanel {
     class StatusBadgeRenderer extends javax.swing.table.DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable t, Object value, boolean isS, boolean hasF, int r, int c) {
+            super.getTableCellRendererComponent(t, value, isS, hasF, r, c);
             String status = value == null ? "" : value.toString();
-            UITheme.Pill pill = UITheme.pillForStatus(status);
-            return pill;
+            setText(status);
+            setHorizontalAlignment(JLabel.CENTER);
+            setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
+            if (!isS) {
+                setBackground(r % 2 == 0 ? UITheme.SURFACE : UITheme.TABLE_STRIPE);
+            }
+            setForeground(isS ? t.getSelectionForeground() : statusColor(status));
+            return this;
+        }
+
+        private Color statusColor(String status) {
+            if ("Approved".equalsIgnoreCase(status)) return UITheme.GREEN;
+            if ("Rejected".equalsIgnoreCase(status)) return UITheme.RED;
+            if ("Voted".equalsIgnoreCase(status)) return UITheme.ACCENT;
+            return UITheme.WARNING;
         }
     }
 

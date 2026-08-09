@@ -61,7 +61,9 @@ public class GroupApp extends JPanel {
         UITheme.styleTable(table);
         table.setRowHeight(70);
         table.getColumnModel().getColumn(0).setMaxWidth(70);
-        table.getColumnModel().getColumn(2).setMaxWidth(110);
+        table.getColumnModel().getColumn(2).setMinWidth(110);
+        table.getColumnModel().getColumn(2).setPreferredWidth(120);
+        table.getColumnModel().getColumn(2).setMaxWidth(140);
 
         JScrollPane scrollPane = new JScrollPane(table);
         UITheme.styleScrollPane(scrollPane);
@@ -90,6 +92,7 @@ public class GroupApp extends JPanel {
                 JFileChooser chooser = new JFileChooser();
                 chooser.setDialogTitle("Select Group Image (PNG/JPG, Max 1MB)");
                 chooser.setFileFilter(new FileNameExtensionFilter("Image Files", "png", "jpg", "jpeg", "gif"));
+                String imgPath = null;
                 if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                     File file = chooser.getSelectedFile();
                     if (!isAllowedImage(file)) {
@@ -98,9 +101,10 @@ public class GroupApp extends JPanel {
                                 JOptionPane.ERROR_MESSAGE);
                         return;
                     }
-                    saveData(name, file.getAbsolutePath());
-                    loadData();
+                    imgPath = file.getAbsolutePath();
                 }
+                saveData(name, imgPath);
+                loadData();
             }
         });
 
