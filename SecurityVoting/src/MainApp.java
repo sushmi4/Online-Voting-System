@@ -81,7 +81,7 @@ public class MainApp extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
         gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.VERTICAL;
+        gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.WEST;
 
         // Brand
@@ -115,7 +115,7 @@ public class MainApp extends JFrame {
         addNavLink(links, "Results", "Result");
         gbc.gridx = 2;
         gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.VERTICAL;
+        gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.EAST;
         nav.add(links, gbc);
 
