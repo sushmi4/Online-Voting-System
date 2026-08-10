@@ -2,6 +2,11 @@
 
 Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
 
+## run command
+cd SecurityVoting
+javac -encoding UTF-8 -cp "lib\*" -d bin src\*.java
+java -cp "bin;lib\*;." MainApp
+
 ## Folder Structure
 
 The workspace contains two folders by default, where:

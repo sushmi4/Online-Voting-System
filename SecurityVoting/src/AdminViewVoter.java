@@ -43,19 +43,21 @@ public class AdminViewVoter extends JPanel {
         setBackground(UITheme.SURFACE_MUTED);
 
         // --- 1. TOP PANEL: Header + Search ---
-        JPanel topPanel = new UITheme.HeaderBar();
-        topPanel.setLayout(new BorderLayout());
-        topPanel.setBorder(new javax.swing.border.EmptyBorder(18, 26, 18, 26));
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(UITheme.SURFACE);
+        topPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER),
+                new javax.swing.border.EmptyBorder(18, 26, 18, 26)));
 
         JLabel header = new JLabel("VOTER REGISTRATION DATA");
         header.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        header.setForeground(UITheme.WHITE);
+        header.setForeground(UITheme.PRIMARY_DARK);
         topPanel.add(header, BorderLayout.WEST);
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         searchPanel.setOpaque(false);
 
-        JLabel searchLabel = new JLabel(UITheme.Icons.person(UITheme.WHITE));
+        JLabel searchLabel = new JLabel(UITheme.Icons.person(UITheme.TEXT_MUTED));
         searchPanel.add(searchLabel);
 
         searchField = new UITheme.RoundedTextField(18);
@@ -170,11 +172,21 @@ public class AdminViewVoter extends JPanel {
             String status = value == null ? "" : value.toString();
             setText(status);
             setHorizontalAlignment(JLabel.CENTER);
-            setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-            if (!isS) {
+            if (isS) {
+                setBackground(UITheme.ACCENT_LIGHT);
+                setForeground(UITheme.TEXT_DARK);
+                int top = (r == 0 || !t.isRowSelected(r - 1)) ? 2 : 0;
+                int bottom = (r == t.getRowCount() - 1 || !t.isRowSelected(r + 1)) ? 2 : 0;
+                int left = c == 0 ? 2 : 0;
+                int right = c == t.getColumnCount() - 1 ? 2 : 0;
+                setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(top, left, bottom, right, UITheme.ACCENT),
+                        BorderFactory.createEmptyBorder(2, 8, 2, 8)));
+            } else {
                 setBackground(r % 2 == 0 ? UITheme.SURFACE : UITheme.TABLE_STRIPE);
+                setForeground(statusColor(status));
+                setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
             }
-            setForeground(isS ? t.getSelectionForeground() : statusColor(status));
             return this;
         }
 

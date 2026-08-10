@@ -2,6 +2,7 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -139,11 +140,15 @@ public class VoterDetailsPage extends JPanel {
         table = new JTable(model);
         table.setRowHeight(64);
         UITheme.styleTable(table);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.getColumnModel().getColumn(0).setMaxWidth(70);
+        table.getColumnModel().getColumn(0).setPreferredWidth(70);
         table.getColumnModel().getColumn(1).setMinWidth(100);
-        table.getColumnModel().getColumn(1).setPreferredWidth(120);
-        table.getColumnModel().getColumn(1).setMaxWidth(130);
+        table.getColumnModel().getColumn(1).setPreferredWidth(160);
+        table.getColumnModel().getColumn(2).setMinWidth(150);
+        table.getColumnModel().getColumn(2).setPreferredWidth(340);
         table.getColumnModel().getColumn(3).setMaxWidth(140);
+        table.getColumnModel().getColumn(3).setPreferredWidth(140);
         table.getColumnModel().getColumn(3).setCellRenderer(new ActionRenderer());
 
         fetchGroupsFromDatabase();
@@ -198,7 +203,7 @@ public class VoterDetailsPage extends JPanel {
     // ================= LOAD GROUPS =================
     private void fetchGroupsFromDatabase() {
         model.setRowCount(0);
-        boolean alreadyVoted = VoteDAO.hasUserAlreadyVoted(UserSession.getVoterId());
+        String votedGroup = VoteDAO.getVotedGroup(UserSession.getVoterId());
 
         String query = "SELECT sn, group_name, group_image_path FROM user_groups ORDER BY sn";
         try (Connection conn = Database.getConnection();
@@ -217,7 +222,7 @@ public class VoterDetailsPage extends JPanel {
                     icon = new ImageIcon(img);
                 }
 
-                String action = alreadyVoted ? "Voted" : "Vote Now";
+                String action = (votedGroup != null && votedGroup.equals(name)) ? "Voted" : "Vote Now";
                 model.addRow(new Object[] { sn, icon, name, action });
             }
         } catch (Exception e) {
@@ -358,16 +363,29 @@ public class VoterDetailsPage extends JPanel {
                 boolean isSelected, boolean hasFocus,
                 int row, int column) {
 
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             setHorizontalAlignment(JLabel.CENTER);
-            setBorder(new EmptyBorder(0, 0, 0, 0));
 
-            if (value != null && value.toString().equals("Voted")) {
-                UITheme.Pill pill = new UITheme.Pill("Voted", UITheme.GREEN, UITheme.GREEN_BG);
-                return pill;
+            boolean canVote = value == null || !value.toString().equals("Voted");
+            setText(canVote ? "Vote Now" : "Voted");
+            setCursor(canVote ? new Cursor(Cursor.HAND_CURSOR) : null);
+
+            if (isSelected) {
+                setBackground(UITheme.ACCENT_LIGHT);
+                setForeground(UITheme.TEXT_DARK);
+                int top = (row == 0 || !table.isRowSelected(row - 1)) ? 2 : 0;
+                int bottom = (row == table.getRowCount() - 1 || !table.isRowSelected(row + 1)) ? 2 : 0;
+                int left = column == 0 ? 2 : 0;
+                int right = column == table.getColumnCount() - 1 ? 2 : 0;
+                setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                        javax.swing.BorderFactory.createMatteBorder(top, left, bottom, right, UITheme.ACCENT),
+                        new EmptyBorder(2, 8, 2, 8)));
+            } else {
+                setBackground(row % 2 == 0 ? UITheme.SURFACE : UITheme.TABLE_STRIPE);
+                setForeground(canVote ? UITheme.ACCENT : UITheme.GREEN);
+                setBorder(new EmptyBorder(4, 10, 4, 10));
             }
-            UITheme.Pill pill = new UITheme.Pill("Vote Now", UITheme.ACCENT, UITheme.ACCENT_LIGHT);
-            pill.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-            return pill;
+            return this;
         }
     }
 }

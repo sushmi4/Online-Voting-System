@@ -13,6 +13,7 @@ import java.sql.SQLException;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -34,11 +35,14 @@ public class GroupApp extends JPanel {
         setBackground(UITheme.SURFACE_MUTED);
 
         // --- Header ---
-        JPanel headerBar = new UITheme.HeaderBar();
-        headerBar.setLayout(new BorderLayout());
+        JPanel headerBar = new JPanel(new BorderLayout());
+        headerBar.setBackground(UITheme.SURFACE);
         headerBar.setPreferredSize(new Dimension(0, 62));
+        headerBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER),
+                new EmptyBorder(0, 26, 0, 26)));
         JLabel lblTitle = new JLabel("MANAGE VOTING GROUPS", JLabel.CENTER);
-        lblTitle.setForeground(UITheme.WHITE);
+        lblTitle.setForeground(UITheme.PRIMARY_DARK);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
         headerBar.add(lblTitle, BorderLayout.CENTER);
         add(headerBar, BorderLayout.NORTH);
@@ -60,10 +64,13 @@ public class GroupApp extends JPanel {
         table = new JTable(model);
         UITheme.styleTable(table);
         table.setRowHeight(70);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.getColumnModel().getColumn(0).setMaxWidth(70);
-        table.getColumnModel().getColumn(2).setMinWidth(110);
-        table.getColumnModel().getColumn(2).setPreferredWidth(120);
-        table.getColumnModel().getColumn(2).setMaxWidth(140);
+        table.getColumnModel().getColumn(0).setPreferredWidth(70);
+        table.getColumnModel().getColumn(1).setMinWidth(150);
+        table.getColumnModel().getColumn(1).setPreferredWidth(420);
+        table.getColumnModel().getColumn(2).setMinWidth(140);
+        table.getColumnModel().getColumn(2).setPreferredWidth(260);
 
         JScrollPane scrollPane = new JScrollPane(table);
         UITheme.styleScrollPane(scrollPane);

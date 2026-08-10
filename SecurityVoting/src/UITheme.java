@@ -528,17 +528,27 @@ public final class UITheme {
         public Component getTableCellRendererComponent(JTable t, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
             super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, column);
-            setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
             setIcon(null);
             if (value instanceof Icon) {
                 setIcon((Icon) value);
                 setText("");
             }
             setHorizontalAlignment(value instanceof Icon ? SwingConstants.CENTER : SwingConstants.LEFT);
-            if (!isSelected) {
+            if (isSelected) {
+                setBackground(ACCENT_LIGHT);
+                setForeground(TEXT_DARK);
+                int top = (row == 0 || !t.isRowSelected(row - 1)) ? 2 : 0;
+                int bottom = (row == t.getRowCount() - 1 || !t.isRowSelected(row + 1)) ? 2 : 0;
+                int left = column == 0 ? 2 : 0;
+                int right = column == t.getColumnCount() - 1 ? 2 : 0;
+                setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(top, left, bottom, right, ACCENT),
+                        BorderFactory.createEmptyBorder(2, 8, 2, 8)));
+            } else {
                 setBackground(row % 2 == 0 ? SURFACE : TABLE_STRIPE);
+                setForeground(TEXT_DARK);
+                setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
             }
-            setForeground(isSelected ? WHITE : TEXT_DARK);
             setFont(font(isSelected ? Font.BOLD : Font.PLAIN, 13));
             return this;
         }
@@ -549,8 +559,8 @@ public final class UITheme {
         table.setShowVerticalLines(false);
         table.setShowHorizontalLines(false);
         table.setIntercellSpacing(new Dimension(0, 0));
-        table.setSelectionBackground(ACCENT);
-        table.setSelectionForeground(WHITE);
+        table.setSelectionBackground(ACCENT_LIGHT);
+        table.setSelectionForeground(TEXT_DARK);
         table.setFont(font(Font.PLAIN, 13));
         table.setFillsViewportHeight(true);
         table.setBackground(SURFACE);

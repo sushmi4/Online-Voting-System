@@ -32,6 +32,24 @@ public class VoteDAO {
         }
     }
 
+    // --- Which group did this voter vote for in the current election? (null if none) ---
+    public static String getVotedGroup(String voterId) {
+        String query = "SELECT group_name FROM votes WHERE voter_id=? AND vote_year=?";
+        try (Connection conn = Database.getConnection();
+                PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, voterId);
+            ps.setInt(2, Config.electionYear());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     /**
      * Casts a vote atomically. The UNIQUE(voter_id, vote_year) constraint is the
      * final authority, so concurrent double-voting cannot succeed.
