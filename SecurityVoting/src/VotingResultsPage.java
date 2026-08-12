@@ -35,7 +35,7 @@ public class VotingResultsPage extends JPanel {
         JPanel boxTotal = createStatBox("Voting Statistics", UITheme.ACCENT);
         JPanel totalContent = new JPanel(new GridLayout(2, 1));
         totalContent.setOpaque(false);
-        lblTotalVotersLimit = new JLabel("Total Voters = " + Config.voterLimit(), JLabel.CENTER);
+        lblTotalVotersLimit = new JLabel("Total Voters = 0", JLabel.CENTER);
         lblTotalVotersLimit.setFont(UITheme.font(Font.BOLD, 14));
         lblTotalVotersLimit.setForeground(UITheme.TEXT_MUTED);
         lblCountVotesData = new JLabel("Count Votes = 0", JLabel.CENTER);
@@ -160,7 +160,17 @@ public class VotingResultsPage extends JPanel {
                 }
             }
 
-            // 2. Current Winner
+            // 2. Total Registered Voters
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM voters")) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        lblTotalVotersLimit.setText("Total Voters = " + rs.getInt(1));
+                    }
+                }
+            }
+
+            // 3. Current Winner
             String winner = "None";
             int winnerCount = 0;
             try (PreparedStatement ps = conn.prepareStatement(
@@ -177,7 +187,7 @@ public class VotingResultsPage extends JPanel {
             lblWinnerName.setText(winner);
             lblWinnerVotes.setText(String.valueOf(winnerCount));
 
-            // 3. Icon Row (JOIN user_groups with votes)
+            // 4. Icon Row (JOIN user_groups with votes)
             groupsContainer.removeAll();
             int maxCount = -1;
             String query = "SELECT ug.group_image_path, ug.group_name, COUNT(v.id) as vote_count "
