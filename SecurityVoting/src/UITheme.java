@@ -208,6 +208,7 @@ public final class UITheme {
     /** Flat text button with a soft translucent hover pill (navbar links). */
     public static class TextButton extends JButton {
         private final Color fg;
+        private boolean active;
 
         public TextButton(String text) {
             this(text, PRIMARY_DARK);
@@ -226,11 +227,21 @@ public final class UITheme {
             setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
         }
 
+        public void setActive(boolean active) {
+            this.active = active;
+            setForeground(active ? WHITE : fg);
+            setFont(font(active ? Font.BOLD : Font.PLAIN, 13));
+            repaint();
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            if (getModel().isRollover() || getModel().isPressed()) {
+            if (active) {
+                g2.setColor(ACCENT);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+            } else if (getModel().isRollover() || getModel().isPressed()) {
                 g2.setColor(new Color(fg.getRed(), fg.getGreen(), fg.getBlue(), 30));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
             }
