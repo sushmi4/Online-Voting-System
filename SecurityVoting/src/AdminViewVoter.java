@@ -61,7 +61,7 @@ public class AdminViewVoter extends JPanel {
         searchPanel.add(searchLabel);
 
         searchField = new UITheme.RoundedTextField(18);
-        searchField.setToolTipText("Search by name");
+        searchField.setToolTipText("Search by name, ID, email, phone, address, or status");
         searchField.setPreferredSize(new Dimension(230, 38));
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) {
@@ -128,8 +128,11 @@ public class AdminViewVoter extends JPanel {
             return;
         }
         try {
-            // Escape regex metacharacters to prevent regex injection / errors
-            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + Pattern.quote(text), 3));
+            // Escape regex metacharacters to prevent regex injection / errors.
+            // Search across all data columns: User ID, Voter ID, Name, Email,
+            // DOB, Address, Phone and Status (skip Photo and Action columns).
+            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + Pattern.quote(text),
+                    0, 2, 3, 4, 5, 6, 7, 8));
         } catch (java.util.regex.PatternSyntaxException ex) {
             sorter.setRowFilter(null);
         }
